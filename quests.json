@@ -1,0 +1,40 @@
+{
+  "quests": [
+    {
+      "quest_id": "prologue_01",
+      "text": "A new school year begins. Your classmate looks lonely sitting alone at lunch. What do you do?",
+      "options": [
+        {
+          "text": "Go sit with them and introduce yourself.",
+          "skill": "Empathy",
+          "impact": 0.1,
+          "next_id": "school_rumor_01"
+        },
+        {
+          "text": "Stay with your usual group, it's not your problem.",
+          "skill": "Empathy",
+          "impact": -0.05,
+          "next_id": "school_rumor_01"
+        }
+      ]
+    },
+    {
+      "quest_id": "school_rumor_01",
+      "text": "Your friend is spreading a rumour about someone you know. What do you do?",
+      "options": [
+        {
+          "text": "Ask your friend for the source before believing it.",
+          "skill": "Critical Thinking",
+          "impact": 0.1,
+          "next_id": "end"
+        },
+        {
+          "text": "Tell them it's mean and they should stop.",
+          "skill": "Empathy",
+          "impact": 0.1,
+          "next_id": "end"
+        }
+      ]
+    }
+  ]
+}
