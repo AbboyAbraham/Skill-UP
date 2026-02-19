@@ -1,8 +1,8 @@
-from google import genai
+import anthropic
 import os
 import json
 
-client = genai.Client()  # automatically finds GEMINI_API_KEY
+client = anthropic.Anthropic()  # automatically finds ANTHROPIC_API_KEY
 
 SKILLS = [
     "Critical Thinking", "Creativity", "Problem Solving", "Negotiation",
@@ -35,11 +35,12 @@ def analyse_reflection(text):
     - Positive if they handled it well, negative if they struggled
     - Return ONLY the JSON, nothing else
     """
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=100,
+        messages=[{"role": "user", "content": prompt}]
     )
-    cleaned = response.text.strip().replace("```json", "").replace("```", "")
+    cleaned = message.content[0].text.strip().replace("```json", "").replace("```", "")
     return json.loads(cleaned)
 
 def apply_reflection(user, text):
