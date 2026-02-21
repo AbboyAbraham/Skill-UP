@@ -1,8 +1,32 @@
 import streamlit as st
 import base64
+import re
 from user import AdolescentUser
 from quest_engine import load_quests, get_current_quest
 from reflection import apply_reflection
+
+# --- Security Helpers ---
+def sanitize_username(username):
+    # Only allow letters, numbers, spaces, hyphens — no scripts or injections
+    return re.sub(r'[^a-zA-Z0-9 \-_]', '', username).strip()[:20]
+
+def rate_limit_reflection():
+    # Prevent spam — max 10 reflections per session
+    count = st.session_state.get("reflection_count", 0)
+    if count >= 10:
+        st.error("⚠️ Maximum reflections reached for this session.")
+        st.stop()
+    st.session_state["reflection_count"] = count + 1
+
+def check_input_length(text, max_chars=500):
+    # Prevent extremely long inputs being sent to AI
+    return text[:max_chars]
+
+def block_suspicious_input(text):
+    # Block prompt injection attempts
+    banned = ["ignore previous", "system prompt", "jailbreak", "forget instructions", "act as"]
+    text_lower = text.lower()
+    return any(b in text_lower for b in banned)
 
 def get_encoded_image(path):
     try:
@@ -14,7 +38,7 @@ def get_encoded_image(path):
 def apply_pixel_style():
     text_color = "#0d0d1a" if not st.session_state.get("dark_mode", True) else "white"
     box_bg = "rgba(240,240,255,0.85)" if not st.session_state.get("dark_mode", True) else "rgba(26,26,46,0.85)"
-    
+
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -209,6 +233,8 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 if "bg_index" not in st.session_state:
     st.session_state.bg_index = 0
+if "reflection_count" not in st.session_state:
+    st.session_state.reflection_count = 0
 
 apply_pixel_style()
 set_background()
@@ -230,11 +256,15 @@ if st.session_state.user is not None:
 if st.session_state.page == "login":
     st.markdown("<h1>⚔️ SKILL-UP</h1>", unsafe_allow_html=True)
     st.markdown('<div class="quest-box">Welcome, adventurer. Your journey to master the 12 life skills begins now.</div>', unsafe_allow_html=True)
-    username = st.text_input("Enter your name:")
+    username = st.text_input("Enter your name:", max_chars=20)
     if st.button("▶ START GAME") and username:
-        st.session_state.user = AdolescentUser(username)
-        st.session_state.page = "quest"
-        st.rerun()
+        clean_username = sanitize_username(username)
+        if not clean_username:
+            st.error("⚠️ Please enter a valid name (letters and numbers only).")
+        else:
+            st.session_state.user = AdolescentUser(clean_username)
+            st.session_state.page = "quest"
+            st.rerun()
 
 # --- Quest Page ---
 elif st.session_state.page == "quest":
@@ -270,11 +300,15 @@ elif st.session_state.page == "reflection":
     st.markdown("<h1>📝 REFLECTION</h1>", unsafe_allow_html=True)
     st.markdown('<div class="quest-box">💬 &nbsp; You have completed today\'s quests. Take a moment to reflect on your day. What happened? How did you handle it?</div>', unsafe_allow_html=True)
 
-    reflection_text = st.text_area("Write your reflection here...")
+    reflection_text = st.text_area("Write your reflection here...", max_chars=500)
 
     if st.button("▶ SUBMIT") and reflection_text:
-        if "reflection_result" not in st.session_state:
-            result = apply_reflection(user, reflection_text)
+        if block_suspicious_input(reflection_text):
+            st.error("⚠️ Invalid input detected. Please write about your day normally.")
+        elif "reflection_result" not in st.session_state:
+            rate_limit_reflection()
+            clean_text = check_input_length(reflection_text)
+            result = apply_reflection(user, clean_text)
             st.session_state.reflection_result = result
 
     if "reflection_result" in st.session_state:
