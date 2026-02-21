@@ -191,7 +191,7 @@ def set_background():
             background-image: url("data:image/png;base64,{layer4}");
             background-repeat: repeat-x;
             background-size: auto 100%;
-            animation: scrollLayer4 25s linear infinite;
+            animation: scrollLayer4 0s linear infinite;
             z-index: 0; opacity: 0.7;
         }}
         @keyframes scrollLayer4 {{
